@@ -1,7 +1,7 @@
 ﻿//#include "stdafx.h"
 //#include "vld.h"
 //SDK版本号
-#define SDK_VERSION "0.1"
+#define SDK_VERSION "2.1.15"
 
 #include "DNS.h"
 
@@ -23,9 +23,9 @@ using namespace std;
 
 const int SILKSIZE = 700;
 
-static Configs g_configs;
+extern Configs g_configs;
 //static CTimeLog* p_Timelog = nullptr;
-extern CTimeLog* p_Timelog = nullptr;
+extern CTimeLog* p_Timelog;
 static CURL *curl = nullptr;
 static string session_id;
 pthread_mutex_t seq_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -442,15 +442,19 @@ eReturnCode CloudVDStartSession(const char * params, SESSION_HANDLE * handle)
 		sp->m_error_code = jsonobj["error_code"].asInt();
 		if (sp->m_error_code != 0)
 		{
-			ret_code = CLOUDVD_ERR_SERVER;
+			
 			if (g_configs.b_log)
 			{
 				p_Timelog->tprintf("[CloudVDStartSession]vd_code=%d\n",sp->m_error_code);
 			}
+			ret_code = CLOUDVD_ERR_SERVER;
+			goto label;
 		}
 	} else {
 		//ret_code =  (eReturnCode)res;
 		ret_code = CLOUDVD_ERR_NET;
+		delete sp;
+		sp = nullptr;
 		goto label;
 	}
 
@@ -462,10 +466,16 @@ eReturnCode CloudVDStartSession(const char * params, SESSION_HANDLE * handle)
 		sp->m_data->c_code = CURLE_OK ;//libcurl的返回码默认CURLE_OK
 		pthread_t m_threadID;
 		int ret = pthread_create(&m_threadID, NULL, ThreadPostData, (void*)sp->m_data);
+		if(ret != 0)
+		{
+			p_Timelog->tprintf("[CloudVDStartSession]pthread start error:%d\n",ret);
+			ret_code = CLOUDVD_ERR_NULL_POINTER;
+			goto label;
+		}
 		//确保线程启动起来
 		while (!sp->m_data->b_start)
 		{
-			Time_sleep(1);
+			Time_sleep(5);
 		}
 	}
 
@@ -591,7 +601,7 @@ eReturnCode CloudVDEndSession(SESSION_HANDLE handle)
 		//确保线程终止
 		while (sp->m_data->b_start)
 		{
-			Time_sleep(1);
+			Time_sleep(5);
 		}
 
 		std::string data = get_data((SessionParam*)handle, &g_configs, "SessionEnd", "", (eAudioStatus)NULL);

@@ -1,34 +1,31 @@
 #pragma once
 
-#include <curl/curl.h>
+
+
 #include <string>
+#include <string.h>
+#include <curl/curl.h>
 #include <vector>
 #include <cstdlib>
-#include <stdio.h>
+
 #include <stdlib.h>
 #include "pthread.h"
 #include <signal.h>
 #include <TimeLog.h>
-#ifndef WIN32
+#include <Configs.h>
+	
 	#include <setjmp.h>
-	#include <netdb.h>
-	#include <arpa/inet.h>
-	#include <signal.h>
-	#include <unistd.h>
-	#include <pthread.h>
-	#include <arpa/inet.h>
-	#include <netinet/in.h>
-	#include <err.h>
-	#include <sys/ioctl.h>
-	#include <sys/socket.h>
-	#include <netdb.h>
+#ifndef WIN32
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #else
-	#include <vld.h>
-	#include "winsock2.h"
-	#include "Ws2tcpip.h"
-	#pragma comment(lib, "Ws2_32.lib")  
+#include <winsock2.h>
 #endif
-
+#pragma comment(lib, "ws2_32")
 //http://119.29.29.29/d?dn=[域名加密后的字符串]&id=[授权ID]&ttl=1
 #define DNS "http://119.29.29.29/d?dn="
 #define ID "&id=[7191]"
@@ -44,7 +41,7 @@ std::string Parsing_IP(const char *url);
 void set_share_handle(CURL* curl_handle);
 void Time_sleep(unsigned long time_ms);
 
-
+using std::string;
 //用于让主线程判断是那个线程较早的获取了IP
 typedef enum STATUS {
 	INIT_STATUS = 0,
@@ -62,3 +59,4 @@ typedef struct Thread_IP
 }ip_param;
 
 extern CTimeLog* p_Timelog;
+extern Configs g_configs;
