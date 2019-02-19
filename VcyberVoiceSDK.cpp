@@ -448,13 +448,12 @@ eReturnCode CloudVDStartSession(const char * params, SESSION_HANDLE * handle)
 				p_Timelog->tprintf("[CloudVDStartSession]vd_code=%d\n",sp->m_error_code);
 			}
 			ret_code = CLOUDVD_ERR_SERVER;
+			sp->m_state = CLOUDVD_ERR_SERVER;
 			goto label;
 		}
 	} else {
-		//ret_code =  (eReturnCode)res;
 		ret_code = CLOUDVD_ERR_NET;
-		delete sp;
-		sp = nullptr;
+		sp->m_state = CLOUDVD_ERR_NET;
 		goto label;
 	}
 
@@ -604,28 +603,39 @@ eReturnCode CloudVDEndSession(SESSION_HANDLE handle)
 			Time_sleep(5);
 		}
 
-		std::string data = get_data((SessionParam*)handle, &g_configs, "SessionEnd", "", (eAudioStatus)NULL);
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
+		if (g_configs.b_log)
+		{
+			p_Timelog->tprintf("[CloudVDEndSession]m_state=%d\n",sp->m_state);
+		}
+		if (sp->m_state != CLOUDVD_ERR_NET)
+		{
+			std::string data = get_data((SessionParam*)handle, &g_configs, "SessionEnd", "", (eAudioStatus)NULL);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
 
-		std::string rev_data,rev_header;
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &rev_data);
-		curl_easy_setopt(curl, CURLOPT_HEADERDATA, &rev_header); 
+			std::string rev_data,rev_header;
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &rev_data);
+			curl_easy_setopt(curl, CURLOPT_HEADERDATA, &rev_header); 
 		
-		if (g_configs.b_log) {
-			p_Timelog->tprintf("[CloudVDEndSession]curl_easy_perform Stime\n");
-		}
-		CURLcode res = curl_easy_perform(curl);
-		if (g_configs.b_log) {
-			p_Timelog->tprintf("[CloudVDEndSession]curl_code=%d\n",res);
-			p_Timelog->tprintf("[CloudVDEndSession]curl_easy_perform Etime\n");
-		}
+			if (g_configs.b_log) {
+				p_Timelog->tprintf("[CloudVDEndSession]curl_easy_perform Stime\n");
+			}
+			CURLcode res = curl_easy_perform(curl);
+			if (g_configs.b_log) {
+				p_Timelog->tprintf("[CloudVDEndSession]curl_code=%d\n",res);
+				p_Timelog->tprintf("[CloudVDEndSession]curl_easy_perform Etime\n");
+			}
 
-		if (CURLE_OK == res){
-			ret_code = CLOUDVD_SUCCESS;
-		} else {
-			//ret_code =  (eReturnCode)res;
+			if (CURLE_OK == res){
+				ret_code = CLOUDVD_SUCCESS;
+			} else {
+				ret_code =  CLOUDVD_ERR_NET;
+			}
+		}
+		else
+		{
 			ret_code =  CLOUDVD_ERR_NET;
 		}
+
 		
 		if (sp != nullptr)
 		{
