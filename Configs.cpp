@@ -72,7 +72,7 @@ SessionParam::SessionParam(const char *str)
 	{
 		m_audio_quality = 10;
 	}
-
+	
 	int q = m_audio_quality;
 	int hz = 0;
 	if (m_audio_format == 1)

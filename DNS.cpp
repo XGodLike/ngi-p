@@ -402,7 +402,7 @@ std::string Parsing_IP(const char* url)
 			p_Timelog->tprintf("[Parsing_IP]wait Get_IP_pod Thread start\n");
 		while (!pod_ip.b_start)
 		{
-			Time_sleep(3);
+			Time_sleep(1);
 		}
 		//pthread_detach(pod_ID);
 	}
@@ -424,7 +424,7 @@ std::string Parsing_IP(const char* url)
 			p_Timelog->tprintf("[Parsing_IP]wait Get_IP_normal Thread start\n");
 		while (!normal_ip.b_start)
 		{
-			Time_sleep(3);
+			Time_sleep(1);
 		}
 		//pthread_detach(normal_ID);
 	}
@@ -432,11 +432,11 @@ std::string Parsing_IP(const char* url)
 	int time_out = 100;
 	if(g_configs.b_log)
 			p_Timelog->tprintf("[Parsing_IP]Check b_status Start\n");
-	int print_time = 20;
+	//int print_time = 20;
 	while (true)
 	{
-		if(g_configs.b_log && print_time--)
-				p_Timelog->tprintf("[Parsing_IP]pod_ip.b_status=%d;normal_ip.b_status=%d\n",pod_ip.b_status,normal_ip.b_status);
+		//if(g_configs.b_log && print_time-- > 0)
+		//		p_Timelog->tprintf("[Parsing_IP]pod_ip.b_status=%d;normal_ip.b_status=%d\n",pod_ip.b_status,normal_ip.b_status);
 		//退出的三种情况1.任何一个线程成功获取IP;2.pod_ip线程超时;3.两个线程都返回失败
 		if (pod_ip.b_status == SUCCEEDED || normal_ip.b_status == SUCCEEDED ||
 			pod_ip.b_status == POD_TIME_OUT||(pod_ip.b_status == UNSUCCEEDED && normal_ip.b_status == UNSUCCEEDED))
@@ -445,17 +445,19 @@ std::string Parsing_IP(const char* url)
 					p_Timelog->tprintf("[Parsing_IP]pod_ip.b_status=%d;normal_ip.b_status=%d;break\n",pod_ip.b_status,normal_ip.b_status);
 			break;
 		}
-		//若pod_ip失败，normal_ip线程最多两秒后要退出
+		//若pod_ip失败，normal_ip线程最多一秒后要退出
 		if (pod_ip.b_status == UNSUCCEEDED && normal_ip.b_status == INIT_STATUS)
 		{
-			while(time_out-- && normal_ip.b_status == INIT_STATUS)
+			while(time_out-- > 0 && normal_ip.b_status == INIT_STATUS)
 			{
-				Time_sleep(3);
+				Time_sleep(1);
 			}
 			if(g_configs.b_log)
 					p_Timelog->tprintf("[Parsing_IP]time_out--;pod_ip.b_status=%d;normal_ip.b_status=%d\n",pod_ip.b_status,normal_ip.b_status);
 			break;
-		}	
+		}
+
+		Time_sleep(1);
 	}
 	if(g_configs.b_log)
 		p_Timelog->tprintf("[Parsing_IP]Check b_status End\n");

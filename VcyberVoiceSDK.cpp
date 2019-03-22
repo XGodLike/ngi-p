@@ -1,7 +1,7 @@
 ﻿//#include "stdafx.h"
 //#include "vld.h"
 //SDK版本号
-#define SDK_VERSION "2.1.15"
+#define SDK_VERSION "2.1.16"
 
 #include "DNS.h"
 
@@ -474,7 +474,7 @@ eReturnCode CloudVDStartSession(const char * params, SESSION_HANDLE * handle)
 		//确保线程启动起来
 		while (!sp->m_data->b_start)
 		{
-			Time_sleep(5);
+			Time_sleep(1);
 		}
 	}
 
@@ -600,7 +600,7 @@ eReturnCode CloudVDEndSession(SESSION_HANDLE handle)
 		//确保线程终止
 		while (sp->m_data->b_start)
 		{
-			Time_sleep(5);
+			Time_sleep(1);
 		}
 
 		if (g_configs.b_log)
