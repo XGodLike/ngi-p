@@ -1,7 +1,7 @@
 ﻿//#include "stdafx.h"
 //#include "vld.h"
 //SDK版本号
-#define SDK_VERSION "2.1.16"
+#define SDK_VERSION "2.1.18"
 
 #include "DNS.h"
 
@@ -324,20 +324,17 @@ eReturnCode CloudVDInit(const char * configs)
 			p_Timelog->tprintf("[CloudVDInit]DNS_pod Stime\n");
 
 		g_configs.m_server_port = Get_Port((void*)g_configs.m_server_addr.c_str());//获取端口
-		//g_configs.m_server_ip =  DNS_pod((void*)g_configs.m_server_addr.c_str());//智能DNS解析出来的IP;失败为""
-		g_configs.m_server_ip =  Parsing_IP(g_configs.m_server_addr.c_str());//智能DNS解析出来的IP;失败为""
+		g_configs.m_server_ip =  DNS_pod((void*)g_configs.m_server_addr.c_str());//智能DNS解析出来的IP;失败为""
+		//g_configs.m_server_ip =  Parsing_IP(g_configs.m_server_addr.c_str());//智能DNS解析出来的IP;失败为""
 
 		if (g_configs.b_log)
 			p_Timelog->tprintf("[CloudVDInit]DNS_pod Etime\n");	
 
-		if (g_configs.m_server_ip == "")
+		if (g_configs.m_server_ip != "")
 		{
-			ret_code = CLOUDVD_ERR_NET;
-			goto label;
+			g_configs.m_server_addr = "http://" + g_configs.m_server_ip + ":" + g_configs.m_server_port;
 		}
-
-
-		g_configs.m_server_addr = "http://" + g_configs.m_server_ip + ":" + g_configs.m_server_port;
+		
 	}else
 	{
 		g_configs.m_server_port = Get_Port((void*)g_configs.m_server_addr.c_str());//获取端口
@@ -346,16 +343,6 @@ eReturnCode CloudVDInit(const char * configs)
 	if (g_configs.b_log) 
 		p_Timelog->tprintf("[CloudVDInit]server_addr:%s\n",g_configs.m_server_addr.c_str());
 
-
-	curl_easy_setopt(curl, CURLOPT_URL, g_configs.m_server_addr.c_str());
-	//线程使用libcurl访问时，设置了超时时间，而libcurl库不会为这个超时信号做任何处理，
-	//信号产生而没有信号句柄处理，可能导致程序退出。
-	//用以下选项禁止访问超时的时候抛出超时信号。
-	//curl_easy_setopt(curl, CURLOPT_NOSIGNAL,1L);
-	curl_easy_setopt(curl, CURLOPT_POST, 1L);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data_str);
-	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, get_header_str);		
-	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");		
 
 label:
 	if (g_configs.b_log) 
@@ -395,6 +382,16 @@ eReturnCode CloudVDStartSession(const char * params, SESSION_HANDLE * handle)
 	SessionParam *sp = new SessionParam(params);
 	*handle = sp;
 
+
+	curl_easy_setopt(curl, CURLOPT_URL, g_configs.m_server_addr.c_str());
+	//线程使用libcurl访问时，设置了超时时间，而libcurl库不会为这个超时信号做任何处理，
+	//信号产生而没有信号句柄处理，可能导致程序退出。
+	//用以下选项禁止访问超时的时候抛出超时信号。
+	//curl_easy_setopt(curl, CURLOPT_NOSIGNAL,1L);
+	curl_easy_setopt(curl, CURLOPT_POST, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data_str);
+	curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, get_header_str);		
+	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");		
 	sp->m_http_headers = curl_slist_append(nullptr, "Content-Type:");
 	sp->m_http_headers = curl_slist_append(sp->m_http_headers, "Accept:");
 	sp->m_http_headers = curl_slist_append(sp->m_http_headers, "Expect:");

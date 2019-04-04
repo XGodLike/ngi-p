@@ -154,10 +154,9 @@ static void *Get_IP_pod(void* parameter)
 	std::string data="";
 	char* ipstr = NULL;
 	CURL *curl = NULL;
-#ifdef WIN32
+
 	pthread_cleanup_push(curl_easy_cleanup,(void*) curl);
-#endif
-	 curl = curl_easy_init();
+	curl = curl_easy_init();
 #ifdef WIN32
 	pthread_testcancel();
 	std::string domain = Get_Domain((void*)thread_param->url.c_str());
@@ -167,6 +166,7 @@ static void *Get_IP_pod(void* parameter)
 #endif
 	std::string server_url = DNS + domain;
 	CURLcode res;
+	//curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1);
 	curl_easy_setopt(curl, CURLOPT_URL, server_url.c_str());
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);   
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT ,timeout);
@@ -218,9 +218,7 @@ static void *Get_IP_pod(void* parameter)
 	}
 	
 	curl_easy_cleanup(curl);
-#ifdef WIN32
 	pthread_cleanup_pop(0);
-#endif
 
 if(g_configs.b_log)
 {
@@ -289,10 +287,11 @@ static void *Get_IP_normal(void* parameter)
 	 // 进行域名解析
 	pthread_cleanup_push(freeaddrinfo,(void*)AddrList);
 	pthread_testcancel();
-    	nStatus = getaddrinfo(strDomain2Resolve, NULL, &Hints, &AddrList);
+    nStatus = getaddrinfo(strDomain2Resolve, NULL, &Hints, &AddrList);
 	pthread_testcancel();
 #else
-	 nStatus = getaddrinfo(strDomain2Resolve, NULL, &Hints, &AddrList);
+	pthread_cleanup_push(freeaddrinfo,(void*)AddrList);
+	nStatus = getaddrinfo(strDomain2Resolve, NULL, &Hints, &AddrList);
 #endif
     if (0 != nStatus)
     {
@@ -329,10 +328,10 @@ static void *Get_IP_normal(void* parameter)
 	}
 lable:
 	freeaddrinfo(AddrList);
+	pthread_cleanup_pop(0);
 
 #ifdef WIN32
-	pthread_cleanup_pop(0);
-    	WSACleanup();
+    WSACleanup();
 	pthread_cleanup_pop(0);
 #endif
 
@@ -471,6 +470,7 @@ std::string Parsing_IP(const char* url)
 	}
 
 label:
+	Time_sleep(1);
 	///////////////////////////杀掉normal_ID///////////////////////////////////////////////////
 	int kill_rc = pthread_kill(normal_ID,0);
 	if(kill_rc == 3)
