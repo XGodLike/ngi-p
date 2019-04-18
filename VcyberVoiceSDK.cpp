@@ -1,7 +1,7 @@
 ﻿//#include "stdafx.h"
 //#include "vld.h"
 //SDK版本号
-#define SDK_VERSION "2.1.18"
+#define SDK_VERSION "2.1.19"
 
 #include "DNS.h"
 
@@ -292,8 +292,8 @@ eReturnCode CloudVDInit(const char * configs)
 		struct timeval stv;
 		gettimeofday(&stv, NULL);
 #endif
+
 	curl_global_init(CURL_GLOBAL_ALL);
-	curl = curl_easy_init();
 
 	eReturnCode ret_code = CLOUDVD_SUCCESS;
 	bool b_config = g_configs.Init(configs);
@@ -382,7 +382,8 @@ eReturnCode CloudVDStartSession(const char * params, SESSION_HANDLE * handle)
 	SessionParam *sp = new SessionParam(params);
 	*handle = sp;
 
-
+	
+	curl = curl_easy_init();
 	curl_easy_setopt(curl, CURLOPT_URL, g_configs.m_server_addr.c_str());
 	//线程使用libcurl访问时，设置了超时时间，而libcurl库不会为这个超时信号做任何处理，
 	//信号产生而没有信号句柄处理，可能导致程序退出。
@@ -650,6 +651,12 @@ label:
 		p_Timelog->EndTimeLog("[CloudVDEndSession]CloudVDEndSession End Time[%d]\n",stv);
 #endif
 	}
+	//释放libcurl
+	if(curl != nullptr)
+	{
+		curl_easy_cleanup(curl);
+		curl = nullptr;
+	}
 	return ret_code;
 }
 
@@ -657,8 +664,11 @@ eReturnCode CloudVDFini() {
 	if (g_configs.b_log) {
 		p_Timelog->tprintf("[CloudVDFini]CloudVDFini Start Time\n");
 	}
-	curl_easy_cleanup(curl);
-	curl = nullptr;
+	if(curl != nullptr)
+	{
+		curl_easy_cleanup(curl);
+		curl = nullptr;
+	}
 	curl_global_cleanup();
 	if (g_configs.b_log)
 	{

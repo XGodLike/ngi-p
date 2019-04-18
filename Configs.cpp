@@ -68,7 +68,7 @@ SessionParam::SessionParam(const char *str)
 		jsonobj.removeMember("audio_quality");
 	}
 	
-	if (m_audio_quality <= 0 || m_audio_quality > 10)
+	if (m_audio_quality < 0 || m_audio_quality > 10)
 	{
 		m_audio_quality = 10;
 	}
